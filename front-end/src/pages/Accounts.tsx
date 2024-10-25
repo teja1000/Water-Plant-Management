@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import Accountform from "../components/Accountform";
+import AccountForm from "../components/Accountform";
 import Button from "../components/button";
 import Header from "../components/Header";
 import AccountDetails from "../components/AccountDetails";
@@ -47,56 +47,53 @@ const Accounts = () => {
   const [previousDayLogs, setPreviousDayLogs] = useState<PreviousDayLog[]>([]);
   const [totalLog, setTotalLog] = useState({ totalBill: 0, totalCoolingCans: 0, totalNormalCans: 0, totalDrinkAmount: 0 });
 
-  const toggleForm = () => {
-    setShowForm(!showForm);
-  };
-
   useEffect(() => {
-    const fetchAccounts = async () => {
-      try {
-        const response = await axios.get("http://localhost:3010/accounts");
-        setAccounts(response.data);
-      } catch (error) {
-        console.error("Error fetching accounts:", error);
-      }
-    };
-
     fetchAccounts();
   }, []);
 
   useEffect(() => {
-    const fetchLogs = async () => {
-      if (selectedAccount) {
-        try {
-          const presentDayResponse = await axios.get(`http://localhost:3010/accounts/${selectedAccount._id}/present-day-log`);
-          setPresentDayLog(presentDayResponse.data);
-
-          const previousDayResponse = await axios.get(`http://localhost:3010/accounts/${selectedAccount._id}/previous-day-log`);
-          const previousLogs = previousDayResponse.data;
-          setPreviousDayLogs(previousLogs);
-
-          const totalBill = previousLogs.reduce((acc: number, log: PreviousDayLog) => acc + log.Bill, 0);
-          const totalCoolingCans = previousLogs.reduce((acc: number, log: PreviousDayLog) => acc + log.CoolingCans, 0);
-          const totalNormalCans = previousLogs.reduce((acc: number, log: PreviousDayLog) => acc + log.NormalCans, 0);
-          const totalDrinkAmount = previousLogs.reduce((acc: number, log: PreviousDayLog) => acc + log.DrinkAmount, 0);
-
-          setTotalLog({ totalBill, totalCoolingCans, totalNormalCans, totalDrinkAmount });
-        } catch (error) {
-          console.error("Error fetching logs:", error);
-        }
-      }
-    };
-
-    fetchLogs();
+    if (selectedAccount) {
+      fetchLogs(selectedAccount._id);
+    }
   }, [selectedAccount]);
+
+  const fetchAccounts = async () => {
+    try {
+      const response = await axios.get("http://localhost:3010/accounts");
+      setAccounts(response.data);
+    } catch (error) {
+      console.error("Error fetching accounts:", error);
+    }
+  };
+
+  const fetchLogs = async (accountId: string) => {
+    try {
+      const presentDayResponse = await axios.get(`http://localhost:3010/accounts/${accountId}/present-day-log`);
+      setPresentDayLog(presentDayResponse.data);
+
+      const previousDayResponse = await axios.get(`http://localhost:3010/accounts/${accountId}/previous-day-log`);
+      const previousLogs = previousDayResponse.data;
+      setPreviousDayLogs(previousLogs);
+
+      const totalBill = previousLogs.reduce((acc: number, log: PreviousDayLog) => acc + log.Bill, 0);
+      const totalCoolingCans = previousLogs.reduce((acc: number, log: PreviousDayLog) => acc + log.CoolingCans, 0);
+      const totalNormalCans = previousLogs.reduce((acc: number, log: PreviousDayLog) => acc + log.NormalCans, 0);
+      const totalDrinkAmount = previousLogs.reduce((acc: number, log: PreviousDayLog) => acc + log.DrinkAmount, 0);
+
+      setTotalLog({ totalBill, totalCoolingCans, totalNormalCans, totalDrinkAmount });
+    } catch (error) {
+      console.error("Error fetching logs:", error);
+    }
+  };
 
   const handleAccountClick = (account: Account) => {
     setSelectedAccount(account);
+    setShowForm(false); // Hide the form when an account is selected
   };
 
   const handlePresentDayLogChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setPresentDayLog((prev) => prev ? { ...prev, [name]: Number(value) } : null);
+    setPresentDayLog((prev) => (prev ? { ...prev, [name]: Number(value) } : null));
   };
 
   const handlePresentDayLogSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -117,8 +114,8 @@ const Accounts = () => {
       <Header />
       <div className="flex">
         <div className="w-1/4 p-4 bg-gray-200">
-          <Button name={showForm ? "accounts" : "new"} display={toggleForm} />
-          {showForm && <Accountform />}
+          <Button name={showForm ? "accounts" : "new"} display={() => setShowForm(!showForm)} />
+          {showForm && <AccountForm />}
           <div className="mt-4">
             {accounts.map((account) => (
               <div
@@ -192,3 +189,4 @@ const Accounts = () => {
 };
 
 export default Accounts;
+
